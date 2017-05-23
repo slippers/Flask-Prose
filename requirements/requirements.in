@@ -1,0 +1,7 @@
+Flask
+markovify
+SQLAlchemy
+Flask-SQLAlchemy
+SQLAlchemy-Utils
+textstat
+flask-jsontools-slippers
