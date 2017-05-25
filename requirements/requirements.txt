@@ -7,7 +7,7 @@
 click==6.7                # via flask, flask-jsontools-slippers
 flask-jsontools-slippers==0.1.5
 flask-sqlalchemy==2.2
-flask==0.12.1             # via flask-jsontools-slippers, flask-sqlalchemy
+flask==0.12.1
 itsdangerous==0.24        # via flask, flask-jsontools-slippers
 jinja2==2.9.6             # via flask, flask-jsontools-slippers
 markovify==0.6.0

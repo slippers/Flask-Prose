@@ -33,6 +33,3 @@ class TestProseMaker(unittest.TestCase):
     def test_ProseMakerSen(self):
         ps = ProseMakerSen(self.pm.sentences)
         self.assertListEqual(ps.sentences, self.pm.sentences)
-
-    def test_fail(self):
-        assert(False)

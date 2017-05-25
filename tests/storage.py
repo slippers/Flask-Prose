@@ -1,5 +1,4 @@
 import unittest
-import pdb
 import random
 import uuid
 try:
@@ -41,6 +40,11 @@ class StorageTestTables(ProseTestCase):
     def test_grock_table_exists(self):
         table_name = "grock"
         expected_columns = ['id', 'prose_id', 'reaction', 'created_date']
+        self.check_table(table_name, expected_columns)
+
+    def test_prosecorpora_table_exists(self):
+        table_name = "prosecorpora"
+        expected_columns = ['prose_id', 'corpora_id']
         self.check_table(table_name, expected_columns)
 
 

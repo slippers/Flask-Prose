@@ -3,5 +3,5 @@ from .prosemaker import ProseMakerText, ProseMakerSen
 from .storage import Storage
 from .fsqla_storage import FSQLAStorage
 
-__version__ = '0.1.46'
+__version__ = '0.1.47'
 __author__ = 'kirk erickson'

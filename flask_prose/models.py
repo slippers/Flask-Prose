@@ -27,9 +27,7 @@ from flask_jsontools import JsonSerializableBase
 class BaseModel(object):
 
     __bind_key__ = 'DEFAULT'
-    id = Column(UUIDType(binary=False),
-                default=uuid.uuid4
-                ,primary_key=True)
+    #id = Column(UUIDType(binary=False), default=uuid.uuid4, primary_key=True)
 
     @declared_attr
     def __tablename__(cls):
@@ -40,6 +38,7 @@ Base = declarative_base(cls=(BaseModel, JsonSerializableBase))
 
 
 class Corpora(Base):
+    id = Column(UUIDType(binary=False), default=uuid.uuid4, primary_key=True)
     # exclude text from json output,  too big.
     _json_exclude = ['text']
     # a short description of the content
@@ -57,6 +56,7 @@ class Corpora(Base):
 
 
 class MarkovText(Base):
+    id = Column(UUIDType(binary=False), default=uuid.uuid4, primary_key=True)
     corpora_id = Column(
         UUIDType(binary=False),
         ForeignKey('corpora.id', ondelete='CASCADE')
@@ -76,6 +76,7 @@ class MarkovText(Base):
 
 
 class ProseType(Base):
+    id = Column(UUIDType(binary=False), default=uuid.uuid4, primary_key=True)
     label = Column(String(256))
 
     def __init__(self, label):
@@ -98,6 +99,7 @@ class ProseCorpora(Base):
 
 class Prose(Base):
     _json_exclude = ['prosetype_id']
+    id = Column(UUIDType(binary=False), default=uuid.uuid4, primary_key=True)
     prosetype_id = Column(
         UUIDType(binary=False),
         ForeignKey('prosetype.id', ondelete='CASCADE')
@@ -119,9 +121,10 @@ class Prose(Base):
 
 
 class Grock(Base):
+    id = Column(UUIDType(binary=False), default=uuid.uuid4, primary_key=True)
     prose_id = Column(
         UUIDType(binary=False),
-        ForeignKey('prose.id', ondelete='CASCADE'), primary_key=True
+        ForeignKey('prose.id', ondelete='CASCADE')
     )
     reaction = Column(String(10))
     created_date = Column(DateTime)
