@@ -1,5 +1,6 @@
 import unittest
-from .storage import StorageTestMethods, StorageTestTables
+from .storage_test_tables import StorageTestTables
+from .storage_test_methods import StorageTestMethods
 try:
     from builtins import range
 except ImportError:

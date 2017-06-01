@@ -1,4 +1,5 @@
 import unittest
+import pytest
 import random
 import uuid
 try:
@@ -11,43 +12,6 @@ from .prosetestcase import ProseTestCase
 import time
 
 
-class StorageTestTables(ProseTestCase):
-
-    def setUp(self):
-        ProseTestCase.setUp(self)
-        self._create_storage()
-
-    def check_table(self, table_name, expected_columns):
-        table = self.metadata.tables[table_name]
-        columns = [t.name for t in table.columns]
-        self.assertListEqual(columns, expected_columns)
-
-    def test_corpora_table_exists(self):
-        table_name = "corpora"
-        expected_columns = ['id', 'label', 'source', 'text', 'post_date']
-        self.check_table(table_name, expected_columns)
-
-    def test_prose_table_exists(self):
-        table_name = "prose"
-        expected_columns = ['id', 'prosetype_id', 'text']
-        self.check_table(table_name, expected_columns)
-
-    def test_prosetype_table_exists(self):
-        table_name = "prosetype"
-        expected_columns = ['id', 'label']
-        self.check_table(table_name, expected_columns)
-
-    def test_grock_table_exists(self):
-        table_name = "grock"
-        expected_columns = ['id', 'prose_id', 'reaction', 'created_date']
-        self.check_table(table_name, expected_columns)
-
-    def test_prosecorpora_table_exists(self):
-        table_name = "prosecorpora"
-        expected_columns = ['prose_id', 'corpora_id']
-        self.check_table(table_name, expected_columns)
-
-
 class StorageTestMethods(ProseTestCase):
 
     def setUp(self):
@@ -55,8 +19,9 @@ class StorageTestMethods(ProseTestCase):
         self._create_storage()
 
     def test_new_corpora(self):
-        corpora = self.storage.corpora_save(label='test', text='hoorah')
-        self.assertIsNotNone(corpora)
+        with pytest.raises(Exception) as excinfo:
+            corpora = self.storage.corpora_save(label='test', text='hoorah')
+        assert str(excinfo.value).startswith('MarkovText not found for corpora:')
 
     def test_prose(self):
         xray = os.path.join(os.path.dirname(__file__), 'shatit')
@@ -156,9 +121,6 @@ class StorageTestMethods(ProseTestCase):
             self.storage.grock(prose_id=prose2['id'], reaction='omg')
 
             xray = self.storage.ratings()
-
-            for x in xray:
-                print('xray', x._asdict())
 
             delta = self.storage.ratings(prose_id=prose3['id'])
 

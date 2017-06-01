@@ -67,62 +67,59 @@ class Storage():
         Base.metadata.create_all(engine)
 
     def close(self):
-        """
+        '''
         each time session.commit() is called an implict tansaction is newly created.
         this sqlalchemy behavior causes an issue with issuing DDL
         commands in newer versions of mysql.
         error 'Waiting for table metadata lock'
-        """
+        '''
         self._session.close()
 
     def prosetype_add(self, label):
-        try:
-            if not label:
-                raise ValueError('label requried')
-
-            pt = self._session.query(ProseType) \
+        if not label:
+            raise ValueError('label requried')
+        pt = self._session.query(ProseType) \
                     .filter(ProseType.label == label) \
                     .one_or_none()
 
-            if pt is None:
-                pt = ProseType(label)
-                self._session.add(pt)
+        if pt:
+            return pt.id
 
+        try:
+            pt = ProseType(label)
+            self._session.add(pt)
             self._session.commit()
             return pt.id
-        except IntegrityError as e:
-            self._logger.exception(str(e))
-        except Exception as e:
-            self._logger.exception(str( e))
+        except:
+           self._session.rollback()
+           raise
 
     def corpora_save(self, label=None, source=None, text=None):
+        rx = re.compile('[^\w\s\.\,\?\!\'\"]')
+        res = rx.sub(' ', text).strip()
+        if not res:
+            raise ValueError('text invalid.')
+        self._logger.debug('label:%s text:%s...', label, res[0:20])
+        corpora = Corpora(text=res, label=label, source=source)
         try:
-            rx = re.compile('[^\w\s\.\,\?\!\'\"]')
-            res = rx.sub(' ', text).strip()
-            if not res:
-                raise ValueError('text invalid.')
-            self._logger.debug('label:%s text:%s...', label, text[0:20])
-            corpora = Corpora(text=res, label=label, source=source)
             self._session.add(corpora)
             self._session.commit()
-
             self._logger.debug('corpora.id:%s', corpora.id)
+        except:
+           self._session.rollback()
+           raise
 
-            if self.generate_markov_callback:
-                self._logger.debug('calling generate_markov_callback:%s',
-                                   self.generate_markov_callback)
-                self.generate_markov_callback(corpora.id)
+        if self.generate_markov_callback:
+            self._logger.debug('calling generate_markov_callback:%s',
+                               self.generate_markov_callback)
+            self.generate_markov_callback(corpora.id)
 
-            if self.generate_prose_callback:
-                self._logger.debug('calling generate_prose_callback:%s',
-                                   self.generate_prose_callback)
-                self.generate_prose_callback((corpora.id,))
+        if self.generate_prose_callback:
+            self._logger.debug('calling generate_prose_callback:%s',
+                               self.generate_prose_callback)
+            self.generate_prose_callback((corpora.id,))
 
-            return corpora.id
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        return corpora.id
 
     def corpora_list(self, uuid=None):
         corpora = self._session.query( \
@@ -158,10 +155,9 @@ class Storage():
                 return True
 
             return False
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        except:
+            self._session.rollback()
+            raise
 
     def generate_markov(self, callback):
         self.generate_markov_callback = callback
@@ -184,10 +180,9 @@ class Storage():
             self._logger.debug('markovtext count:%s',len(markovtext))
             self._session.bulk_save_objects(markovtext)
             self._session.commit()
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        except:
+            self._session.rollback()
+            raise
 
     def generate_prose(self, callback):
         self.generate_prose_callback = callback
@@ -199,88 +194,73 @@ class Storage():
         """
         MAX_SENTENCE_COUNT = 1000
 
-        try:
-            corpora_result = self._session.query(Corpora) \
-                    .filter(Corpora.id.in_(list(corpora))) \
-                    .all()
+        corpora_result = self._session.query(Corpora) \
+                .filter(Corpora.id.in_(list(corpora))) \
+                .all()
 
-            corpora_ids = [str(x.id) for x in corpora_result]
+        corpora_ids = [str(x.id) for x in corpora_result]
 
-            self._logger.debug('corpora_ids:%s',corpora_ids)
+        self._logger.debug('corpora_ids:%s',corpora_ids)
 
-            mtext = self._session.query(MarkovText) \
-                    .filter(MarkovText.corpora_id.in_(corpora_ids)) \
-                    .order_by(func.random()) \
-                    .limit(MAX_SENTENCE_COUNT) \
-                    .all()
+        mtext = self._session.query(MarkovText) \
+                .filter(MarkovText.corpora_id.in_(corpora_ids)) \
+                .order_by(func.random()) \
+                .limit(MAX_SENTENCE_COUNT) \
+                .all()
 
-            self._logger.debug('mtext:%s',len(mtext))
-            if not mtext:
-                raise Exception('MarkovText not found for corpora:%s', corpora_ids)
+        self._logger.debug('mtext:%s',len(mtext))
+        if not mtext:
+            raise Exception('MarkovText not found for corpora:{}'.format(corpora_ids))
 
-            # get the json of the markovtext model
-            pm = ProseMakerSen([m.json() for m in mtext])
+        # get the json of the markovtext model
+        pm = ProseMakerSen([m.json() for m in mtext])
 
-            self.insert_prose(pm, 'stanza')
-            self.insert_prose(pm, 'haiku')
-
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        self.insert_prose(pm, 'stanza')
+        self.insert_prose(pm, 'haiku')
 
     def insert_prose(self,
                      prosemaker,
                      prose_type,
                      MAX_PROSE_COUNT = 5):
-        prose_corpora = []
-        try:
-            prosetype_id = self.prosetype_add(prose_type)
+        prosetype_id = self.prosetype_add(prose_type)
 
-            for x in range(MAX_PROSE_COUNT):
-                prose_json = prosemaker.get_prose(prose_type)
+        for x in range(MAX_PROSE_COUNT):
+            prose_json = prosemaker.get_prose(prose_type)
 
-                self._logger.debug('prose_json:%s', prose_json)
+            self._logger.debug('prose_json:%s', prose_json)
 
-                if not prose_json:
-                    raise Exception('failed to generate prose')
+            if not prose_json:
+                raise Exception('failed to generate prose')
 
+            try:
                 prose = Prose(prosetype_id=prosetype_id, text=prose_json)
 
                 self._session.add(prose)
                 self._session.commit()
-
                 self._logger.debug('prose %s:%s', prose_type, prose.id)
 
                 # gather unique corpora ids here
                 corpora_ids = {(x['corpora_id']) for x in prose_json}
 
                 # create the association ProseCorpora objects
+                prose_corpora = []
                 prose_corpora.extend([ProseCorpora(prose.id, c_id) for c_id in corpora_ids])
-
-            self._session.bulk_save_objects(prose_corpora)
-
-            self._session.commit()
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+                self._session.bulk_save_objects(prose_corpora)
+                self._session.commit()
+            except:
+                self._session.rollback()
+                raise
 
     def prose(self, uuid=None, corpora=()):
         self._logger.debug('uuid:%s corpora:%s', uuid, corpora)
-        try:
-            prose = None
-            if uuid:
-                prose = self._prose(uuid)
-            elif corpora:
-                prose = self._prose_corpora_random(corpora)
-            else:
-                prose = self._prose_random()
-            return self._prose_data(prose)
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        prose = None
+        if uuid:
+            prose = self._prose(uuid)
+        elif corpora:
+            prose = self._prose_corpora_random(corpora)
+        else:
+            prose = self._prose_random()
+        return self._prose_data(prose)
 
     def _prose(self, uuid):
         if not uuid:
@@ -317,36 +297,41 @@ class Storage():
             return {}
 
         prose = self._session.query(Prose) \
-                .join(Prose.prosetype) \
-                .join(Prose.corporas) \
-                .options(joinedload(Prose.prosetype)) \
-                .options(joinedload(Prose.corporas)) \
                 .filter(Prose.id == prose_id[0]) \
                 .first()
 
         if not prose:
             raise Exception('prose not found.')
 
+        prosetype = self._session.query(ProseType) \
+                .filter(prose.prosetype_id == ProseType.id) \
+                .first()
+
+        corpora = self._session.query(Corpora) \
+                .join(ProseCorpora, ProseCorpora.corpora_id == Corpora.id) \
+                .filter(ProseCorpora.prose_id == prose.id) \
+                .all()
+
+        prose_data = json.loads(json.dumps(prose, cls=DynamicJSONEncoder))
+        prose_data['prosetype'] = json.loads(json.dumps(prosetype, cls=DynamicJSONEncoder))
+        prose_data['corporas'] = json.loads(json.dumps(corpora, cls=DynamicJSONEncoder))
+
         self._grock(prose.id, reaction='saw')
 
-        x, y = prose.prosetype, prose.corporas
-
-        return json.loads(json.dumps(prose, cls=DynamicJSONEncoder))
+        return prose_data
 
     def _grock(self, prose_id, reaction='saw'):
-        try:
-            self._logger.debug('prose_id:%s reaction:%s', prose_id, reaction)
-            reactions = ['omg', 'meh', 'saw']
-            if reaction not in reactions:
-                raise ValueError("Expected one of: %s" % reactions)
+        self._logger.debug('prose_id:%s reaction:%s', prose_id, reaction)
+        reactions = ['omg', 'meh', 'saw']
+        if reaction not in reactions:
+            raise ValueError("Expected one of: %s" % reactions)
 
+        try:
             self._session.add(Grock(prose_id, reaction))
             self._session.commit()
-
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        except:
+           self._session.rollback()
+           raise
 
     def grock(self, prose_id, reaction='saw'):
         """
@@ -359,7 +344,7 @@ class Storage():
 
     def ratings(self, rate_type='omg', prose_id=None, limit=10):
         """
-        arg: rate_type = omg | meh 
+        arg: rate_type = omg | meh
         controls if the query looks for meh or omg results
 
         arg: prose_id: just returns result for this prose id
@@ -440,13 +425,11 @@ class Storage():
             rating_result = self._session.query(query).all()
             if rating_result:
                 return json.loads(json.dumps(rating_result, cls=DynamicJSONEncoder))
-                # return [ r._asdict() for r in  rating_result]
             else:
                 return []
-        except IntegrityError as e:
-            self._logger.error(e, exc_info=True)
-        except Exception as e:
-            self._logger.error(e, exc_info=True)
+        except:
+           self._session.rollback()
+           raise
 
     def ratings_all(self):
         omg = self.ratings(rate_type='omg')

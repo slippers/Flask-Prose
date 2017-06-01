@@ -60,7 +60,7 @@ class CorporaAPI(MethodView):
         engine = _get_engine(current_app)
         data = request.files['file'].read()
         label = request.form.get('label')
-        corpora_id = engine.storage.corpora_save(label=label, text=data)
+        corpora_id = engine.storage.corpora_save(label=label, text=data.decode('utf-8'))
         return SqlAlchemyResponse(engine.storage.corpora_list(uuid=corpora_id))
 
 

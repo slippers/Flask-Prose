@@ -43,7 +43,7 @@ class ApiTest(unittest.TestCase):
         with open(self.xray, 'rb') as myfile:
             with self.app.test_client() as c:
                 rv = c.post('/v1/corpora',
-                            data = {'file': (myfile,'shatit_now')})
+                            data = {'label':'test_upload', 'file': (myfile,'shatit_now')})
                 self.assertEqual(rv.status_code, 200)
                 self.assertIsInstance(rv, JsonResponse)
 
