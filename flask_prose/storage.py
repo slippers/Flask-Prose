@@ -134,7 +134,7 @@ class Storage():
                 .group_by(Corpora.id)
 
         if uuid:
-            corpora.filter(Corpora.id == uuid)
+            corpora = corpora.filter(Corpora.id == uuid)
 
         self._logger.debug('corpora_list:%s', str(corpora))
         corpora_result  = corpora.all()

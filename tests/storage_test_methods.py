@@ -11,7 +11,6 @@ import os
 from .prosetestcase import ProseTestCase
 import time
 
-
 class StorageTestMethods(ProseTestCase):
 
     def setUp(self):
@@ -54,8 +53,9 @@ class StorageTestMethods(ProseTestCase):
             corpora2 = self.storage.corpora_save(label='data2', text=data)
             self.assertIsNotNone(corpora2)
             clist = self.storage.corpora_list()
-            print('corpora_list:', clist)
-            self.assertIsNotNone(clist)
+            assert(len(clist) == 2)
+            clist1 = self.storage.corpora_list(uuid=corpora1)
+            assert(len(clist1) == 1)
 
     def test_corpora_generate_prose(self):
         xray = os.path.join(os.path.dirname(__file__), 'shatit')
