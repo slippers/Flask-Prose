@@ -5,6 +5,15 @@ from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_prose import FSQLAStorage, ProseEngine
 from flask_jsontools import FlaskJsonClient, JsonResponse
+from functools import wraps
+
+
+def wrapped_view(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        print('wrapped_view', args)
+        return f(*args, **kwargs)
+    return wrapper
 
 
 class ApiTest(unittest.TestCase):
@@ -23,7 +32,9 @@ class ApiTest(unittest.TestCase):
 
         # config flask-prose
         self.storage = FSQLAStorage(db=db, bind_key='prose')
-        self.prose = ProseEngine(app=app, storage=self.storage)
+        self.prose = ProseEngine()
+        self.prose.viewmethod_decorators(corpora=(wrapped_view,))
+        self.prose.init_app(app=app, storage=self.storage)
 
         #print(app.url_map)
 
