@@ -79,8 +79,8 @@ class Storage():
         if not label:
             raise ValueError('label requried')
         pt = self._session.query(ProseType) \
-                    .filter(ProseType.label == label) \
-                    .one_or_none()
+                .filter(ProseType.label == label) \
+                .one_or_none()
 
         if pt:
             return pt.id
@@ -91,8 +91,8 @@ class Storage():
             self._session.commit()
             return pt.id
         except:
-           self._session.rollback()
-           raise
+            self._session.rollback()
+            raise
 
     def corpora_save(self, label=None, source=None, text=None):
         rx = re.compile('[^\w\s\.\,\?\!\'\"]')
@@ -227,10 +227,11 @@ class Storage():
         for x in range(MAX_PROSE_COUNT):
             prose_json = prosemaker.get_prose(prose_type)
 
-            self._logger.debug('prose_json:%s', prose_json)
-
             if not prose_json:
-                raise Exception('failed to generate prose')
+                self._logger.warning('prosemaker generator error.')
+                return
+            else:
+                self._logger.debug('prose_json:%s', prose_json)
 
             try:
                 prose = Prose(prosetype_id=prosetype_id, text=prose_json)
@@ -260,7 +261,7 @@ class Storage():
             prose = self._prose_corpora_random(corpora)
         else:
             prose = self._prose_random()
-        return self._prose_data(prose)
+            return self._prose_data(prose)
 
     def _prose(self, uuid):
         if not uuid:
@@ -330,8 +331,8 @@ class Storage():
             self._session.add(Grock(prose_id, reaction))
             self._session.commit()
         except:
-           self._session.rollback()
-           raise
+            self._session.rollback()
+            raise
 
     def grock(self, prose_id, reaction='saw'):
         """
@@ -428,8 +429,8 @@ class Storage():
             else:
                 return []
         except:
-           self._session.rollback()
-           raise
+            self._session.rollback()
+            raise
 
     def ratings_all(self):
         omg = self.ratings(rate_type='omg')

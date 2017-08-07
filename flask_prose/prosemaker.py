@@ -32,12 +32,14 @@ class ProseMaker():
         five = [d for d in self.sentences if d['syl'] == 5]
 
         if len(five) < 2:
-            raise Exception('haiku five syllables not found.')
+            self._logger.warning('haiku five syllables not found.')
+            return
 
         seven = [d for d in self.sentences if d['syl'] == 7]
 
         if len(seven) < 1:
-            raise Exception('haiku seven syllables not found.')
+            self._logger.warning('haiku seven syllables not found.')
+            return
 
         return [random.choice(five),
                 random.choice(seven),
