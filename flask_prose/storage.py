@@ -188,7 +188,7 @@ class Storage():
         self.generate_prose_callback = callback
         return callback
 
-    def corpora_generate_prose(self, corpora=set()):
+    def corpora_generate_prose(self, corpora=set(), MAX_PROSE_COUNT = 5):
         """
         arg:corpora = set of corpora ids
         """
@@ -215,42 +215,46 @@ class Storage():
         # get the json of the markovtext model
         pm = ProseMakerSen([m.json() for m in mtext])
 
-        self.insert_prose(pm, 'stanza')
-        self.insert_prose(pm, 'haiku')
+        for x in range(MAX_PROSE_COUNT):
+            self.insert_prose(pm, 'stanza')
+
+        for x in range(MAX_PROSE_COUNT):
+            self.insert_prose(pm, 'haiku')
 
     def insert_prose(self,
                      prosemaker,
                      prose_type,
-                     MAX_PROSE_COUNT = 5):
+                     ):
         prosetype_id = self.prosetype_add(prose_type)
 
-        for x in range(MAX_PROSE_COUNT):
-            prose_json = prosemaker.get_prose(prose_type)
+        prose_json = prosemaker.get_prose(prose_type)
 
-            if not prose_json:
-                self._logger.warning('prosemaker generator error.')
-                return
-            else:
-                self._logger.debug('prose_json:%s', prose_json)
+        if not prose_json:
+            self._logger.warning('prosemaker generator error.')
+            return
+        else:
+            self._logger.debug('prose_json:%s', prose_json)
 
-            try:
-                prose = Prose(prosetype_id=prosetype_id, text=prose_json)
+        try:
+            prose = Prose(prosetype_id=prosetype_id,
+                          title=prose_json['title'],
+                          text=prose_json['prose'])
 
-                self._session.add(prose)
-                self._session.commit()
-                self._logger.debug('prose %s:%s', prose_type, prose.id)
+            self._session.add(prose)
+            self._session.commit()
+            self._logger.debug('prose %s:%s', prose_type, prose.id)
 
-                # gather unique corpora ids here
-                corpora_ids = {(x['corpora_id']) for x in prose_json}
+            # gather unique corpora ids here
+            corpora_ids = {(x['corpora_id']) for x in prose_json['prose']}
 
-                # create the association ProseCorpora objects
-                prose_corpora = []
-                prose_corpora.extend([ProseCorpora(prose.id, c_id) for c_id in corpora_ids])
-                self._session.bulk_save_objects(prose_corpora)
-                self._session.commit()
-            except:
-                self._session.rollback()
-                raise
+            # create the association ProseCorpora objects
+            prose_corpora = []
+            prose_corpora.extend([ProseCorpora(prose.id, c_id) for c_id in corpora_ids])
+            self._session.bulk_save_objects(prose_corpora)
+            self._session.commit()
+        except:
+            self._session.rollback()
+            raise
 
     def prose(self, uuid=None, corpora=()):
         self._logger.debug('uuid:%s corpora:%s', uuid, corpora)
@@ -261,7 +265,7 @@ class Storage():
             prose = self._prose_corpora_random(corpora)
         else:
             prose = self._prose_random()
-            return self._prose_data(prose)
+        return self._prose_data(prose)
 
     def _prose(self, uuid):
         if not uuid:

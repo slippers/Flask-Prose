@@ -88,7 +88,7 @@ class ProseCorpora(Base):
                       ForeignKey('prose.id'),
                       primary_key=True)
     corpora_id = Column(UUIDType(binary=False),
-                        ForeignKey('corpora.id'),
+                        ForeignKey('corpora.id', ondelete='CASCADE'),
                         primary_key=True)
     corpora = relationship('Corpora', lazy='joined')
 
@@ -104,10 +104,12 @@ class Prose(Base):
         UUIDType(binary=False),
         ForeignKey('prosetype.id', ondelete='CASCADE')
     )
+    title = Column(String(256))
     text = Column(JSONType)
 
-    def __init__(self, prosetype_id, text):
+    def __init__(self, prosetype_id, title, text):
         self.prosetype_id = prosetype_id
+        self.title = title
         self.text = text
 
 

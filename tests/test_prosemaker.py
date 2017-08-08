@@ -23,12 +23,12 @@ class TestProseMaker(unittest.TestCase):
         stanza = self.pm.stanza()
         print(stanza)
         self.assertIsNotNone(stanza)
-        self.assertEquals(len(stanza), 5)
+        self.assertEquals(len(stanza['prose']), 5)
 
     def test_haiku(self):
         haiku = self.pm.haiku()
         print(haiku)
-        self.assertEquals(len(haiku), 3)
+        self.assertEquals(len(haiku['prose']), 3)
 
     def test_ProseMakerSen(self):
         ps = ProseMakerSen(self.pm.sentences)

@@ -30,7 +30,7 @@ class StorageTestTables(ProseTestCase):
 
     def test_prose_table_exists(self):
         table_name = "prose"
-        expected_columns = ['id', 'prosetype_id', 'text']
+        expected_columns = ['id', 'prosetype_id','title', 'text']
         self.check_table(table_name, expected_columns)
 
     def test_prosetype_table_exists(self):
