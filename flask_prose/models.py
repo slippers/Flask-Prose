@@ -62,10 +62,12 @@ class MarkovText(Base):
         ForeignKey('corpora.id', ondelete='CASCADE')
     )
     text = Column(String(500))
+    created_date = Column(DateTime)
 
     def __init__(self, corpora_id, text):
         self.corpora_id = corpora_id
         self.text = text
+        self.created_date = datetime.datetime.utcnow()
 
     def json(self):
         return {
@@ -106,11 +108,13 @@ class Prose(Base):
     )
     title = Column(String(256))
     text = Column(JSONType)
+    created_date = Column(DateTime)
 
     def __init__(self, prosetype_id, title, text):
         self.prosetype_id = prosetype_id
         self.title = title
         self.text = text
+        self.created_date = datetime.datetime.utcnow()
 
 
 class Grock(Base):

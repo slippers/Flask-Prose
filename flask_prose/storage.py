@@ -257,32 +257,50 @@ class Storage():
             raise
 
     def prose(self, uuid=None, corpora=()):
-        self._logger.debug('uuid:%s corpora:%s', uuid, corpora)
+        self._logger.debug('prose uuid:%s corpora:%s', uuid, corpora)
         prose = None
         if uuid:
             prose = self._prose(uuid)
         elif corpora:
             prose = self._prose_corpora_random(corpora)
         else:
-            prose = self._prose_random()
+            prose = self._prose_fresh()
+            if not prose:
+                prose = self._prose_random()
+
         return self._prose_data(prose)
 
     def _prose(self, uuid):
         if not uuid:
             raise ValueError('uuid required.')
         prose = self._session.query(Prose.id) \
-                .filter(Prose.id == uuid) \
-                .first()
+                .filter(Prose.id == uuid)
 
-        return prose
+        return prose.first()
 
     def _prose_random(self):
+        """
+        return random prose
+        """
+        self._logger.debug('_prose_random')
         prose = self._session.query(Prose.id) \
                 .order_by(func.random()) \
-                .limit(1) \
-                .first()
+                .limit(1)
 
-        return prose
+        return prose.first()
+
+    def _prose_fresh(self):
+        """
+        left join grock with prose
+        filter so only unseen prose.
+        """
+        self._logger.debug('_prose_fresh')
+        prose = self._session.query(Prose.id) \
+                .outerjoin(Grock, Grock.prose_id == Prose.id) \
+                .filter(Grock.id.is_(None)) \
+                .limit(1)
+
+        return prose.first()
 
     def _prose_corpora_random(self, corpora):
         if not corpora:
@@ -382,9 +400,16 @@ class Storage():
         omg = aliased(Grock)
         meh = aliased(Grock)
         saw = aliased(Grock)
+        prose = aliased(Prose)
 
         _query = select([saw.prose_id,
                          func.count().label('saw'),
+
+                         select([prose.title]) \
+                         .select_from(prose) \
+                         .where(saw.prose_id == prose.id) \
+                         .as_scalar() \
+                         .label('title'),
 
                          select([func.count()]) \
                          .select_from(meh) \

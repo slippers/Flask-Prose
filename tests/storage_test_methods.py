@@ -6,7 +6,6 @@ try:
     from builtins import range
 except ImportError:
     pass
-import unittest
 import os
 from .prosetestcase import ProseTestCase
 import time
@@ -128,7 +127,6 @@ class StorageTestMethods(ProseTestCase):
 
             meh = self.storage.ratings(rate_type='meh')
 
-
     def test_grock_rating(self):
         xray = os.path.join(os.path.dirname(__file__), 'shatit')
         with open(xray, 'r') as myfile:
@@ -155,6 +153,27 @@ class StorageTestMethods(ProseTestCase):
 
             assert(len(xray) == 2)
 
+    def test_prose_fresh(self):
+        xray = os.path.join(os.path.dirname(__file__), 'shatit')
+        with open(xray, 'r') as myfile:
+            data = myfile.read()
+            corpora1 = self.storage.corpora_save(label='data1', text=data)
+            self.assertIsNotNone(corpora1)
+
+            # view the first ten fresh prose
+            for x in range(10):
+                prose = self.storage.prose()
+                rating = self.storage.ratings(prose_id=prose['id'], rate_type='saw')
+
+                print(prose['title'], rating)
+                assert rating[0]['saw'] == 1
+
+            # this should now return a previously viewed prose
+            prose = self.storage.prose()
+            rating = self.storage.ratings(prose_id=prose['id'], rate_type='saw')
+
+            print(prose['title'], rating)
+            assert rating[0]['saw'] > 1
 
     def test_grock_rating_rand(self):
         xray = os.path.join(os.path.dirname(__file__), 'shatit')

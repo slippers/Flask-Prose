@@ -28,9 +28,14 @@ class StorageTestTables(ProseTestCase):
         expected_columns = ['id', 'label', 'source', 'text', 'post_date']
         self.check_table(table_name, expected_columns)
 
+    def test_markovtext(self):
+        table_name = "markovtext"
+        expected_columns = ['id', 'corpora_id', 'text', 'created_date']
+        self.check_table(table_name, expected_columns)
+
     def test_prose_table_exists(self):
         table_name = "prose"
-        expected_columns = ['id', 'prosetype_id','title', 'text']
+        expected_columns = ['id', 'prosetype_id','title', 'text', 'created_date']
         self.check_table(table_name, expected_columns)
 
     def test_prosetype_table_exists(self):
