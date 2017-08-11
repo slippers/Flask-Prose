@@ -204,6 +204,7 @@ class Storage():
 
         mtext = self._session.query(MarkovText) \
                 .filter(MarkovText.corpora_id.in_(corpora_ids)) \
+                .filter(MarkovText.used == False) \
                 .order_by(func.random()) \
                 .limit(MAX_SENTENCE_COUNT) \
                 .all()
@@ -232,8 +233,8 @@ class Storage():
         if not prose_json:
             self._logger.warning('prosemaker generator error.')
             return
-        else:
-            self._logger.debug('prose_json:%s', prose_json)
+
+        self._logger.debug('insert_prose:%s', prose_json)
 
         try:
             prose = Prose(prosetype_id=prosetype_id,
@@ -244,10 +245,15 @@ class Storage():
             self._session.commit()
             self._logger.debug('prose %s:%s', prose_type, prose.id)
 
-            # gather unique corpora ids here
-            corpora_ids = {(x['corpora_id']) for x in prose_json['prose']}
+            # update markovtext used to True 
+            markovtext_ids = [(x['id']) for x in prose_json['prose']]
+            markovtexts = self._session.query(MarkovText) \
+                    .filter(MarkovText.id.in_(markovtext_ids)) \
+                    .update({MarkovText.used:True}, synchronize_session='fetch')
+            self._session.commit()
 
             # create the association ProseCorpora objects
+            corpora_ids = {(x['corpora_id']) for x in prose_json['prose']}
             prose_corpora = []
             prose_corpora.extend([ProseCorpora(prose.id, c_id) for c_id in corpora_ids])
             self._session.bulk_save_objects(prose_corpora)

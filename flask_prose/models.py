@@ -8,6 +8,7 @@ from sqlalchemy import (
     Table,
     Column,
     Integer,
+    Boolean,
     String,
     ForeignKey,
     Text,
@@ -62,6 +63,7 @@ class MarkovText(Base):
         ForeignKey('corpora.id', ondelete='CASCADE')
     )
     text = Column(String(500))
+    used = Column(Boolean, default=False)
     created_date = Column(DateTime)
 
     def __init__(self, corpora_id, text):
