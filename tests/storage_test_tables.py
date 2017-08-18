@@ -30,7 +30,7 @@ class StorageTestTables(ProseTestCase):
 
     def test_markovtext(self):
         table_name = "markovtext"
-        expected_columns = ['id', 'corpora_id', 'text', 'created_date']
+        expected_columns = ['id', 'corpora_id', 'text', 'used', 'created_date']
         self.check_table(table_name, expected_columns)
 
     def test_prose_table_exists(self):
