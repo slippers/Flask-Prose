@@ -4,10 +4,21 @@
 #
 #    pip-compile --output-file dev_requirements.txt dev_requirements.in
 #
-click==6.7                # via pip-tools
-first==2.0.1              # via pip-tools
+click==6.7
+    # via pip-tools
+first==2.0.1
+    # via pip-tools
 pip-tools==1.9.0
-py==1.4.33                # via pytest, pytest-catchlog
+    # via -r dev_requirements.in
+py==1.10.0
+    # via
+    #   pytest
+    #   pytest-catchlog
 pytest-catchlog==1.2.2
+    # via -r dev_requirements.in
 pytest==3.1.0
-six==1.10.0               # via pip-tools
+    # via
+    #   -r dev_requirements.in
+    #   pytest-catchlog
+six==1.10.0
+    # via pip-tools
